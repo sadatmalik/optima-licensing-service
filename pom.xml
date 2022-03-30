@@ -17,6 +17,8 @@
 		<java.version>11</java.version>
 	</properties>
 	<dependencies>
+		<!-- Spring Actuator provides out-of-the-box operational endpoints that help you
+		understand and manage the health of your service -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
@@ -30,6 +32,13 @@
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- Spring HATEAOS hypermedia as the engine of application state -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-hateoas</artifactId>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

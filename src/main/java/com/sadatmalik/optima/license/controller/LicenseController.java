@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 /**
  * The @RestController is a class-level Java annotation that tells the Spring container that
  * this Java class will be used for a REST-based service. This annotation automatically handles
@@ -17,6 +20,9 @@ import java.util.Locale;
  * Unlike the traditional Spring @Controller annotation, @RestController does not require you to
  * return a ResponseBody class from your method in the controller class. This is all handled by
  * the presence of the @RestController annotation, which includes the @ResponseBody annotation.
+ *
+ * WebMvcLinkBuilder is a utility class for creating links on the controller classes. We are
+ * using it to generate HATEOAS links for our controller.
  *
  * @author sadatmalik
  */
@@ -31,7 +37,10 @@ public class LicenseController {
      * This method implements the GET verb used in a REST call and returns a single
      * License class instance.
      *
-     * @return returns a license in a ResponseEntity representing the enitre HTTP
+     * We also create the HATEOAS configuration to retrieve the links for the
+     * LicenseController class.
+     *
+     * @return returns a license in a ResponseEntity representing the entire HTTP
      * response, including the status code, the headers, and the body. If successful, it
      * allows us to return the License object as the body and the 200(OK) status code as
      * the HTTP response of the service.
@@ -43,6 +52,20 @@ public class LicenseController {
 
         License license = licenseService
                 .getLicense(licenseId,organizationId);
+
+        license.add(
+                linkTo(methodOn(LicenseController.class)
+                        .getLicense(organizationId, license.getLicenseId()))
+                        .withSelfRel(),
+                linkTo(methodOn(LicenseController.class)
+                        .createLicense(organizationId, license, null))
+                        .withRel("createLicense"),
+                linkTo(methodOn(LicenseController.class)
+                        .updateLicense(organizationId, license))
+                        .withRel("updateLicense"),
+                linkTo(methodOn(LicenseController.class)
+                        .deleteLicense(organizationId, license.getLicenseId()))
+                        .withRel("deleteLicense"));
 
         return ResponseEntity.ok(license);
     }
