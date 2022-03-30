@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Locale;
+
 /**
  * The @RestController is a class-level Java annotation that tells the Spring container that
  * this Java class will be used for a REST-based service. This annotation automatically handles
@@ -63,13 +65,25 @@ public class LicenseController {
                 .updateLicense(request, organizationId));
     }
 
+    /**
+     * Note the @RequestHeader annotation maps method parameters with request header
+     * values. This service parameter is not required, so if it’s not specified, we
+     * will use the default locale.
+     *
+     * @param organizationId
+     * @param request
+     * @param locale receive the language from the request Accept-Language header.
+     * @return
+     */
     @PostMapping
     public ResponseEntity<String> createLicense(
             @PathVariable("organizationId") String organizationId,
-            @RequestBody License request) {
+            @RequestBody License request,
+            @RequestHeader(value = "Accept-Language",required = false)
+                    Locale locale) {
 
         return ResponseEntity.ok(licenseService
-                .createLicense(request, organizationId));
+                .createLicense(request, organizationId, locale));
     }
 
     @DeleteMapping(value="/{licenseId}")
