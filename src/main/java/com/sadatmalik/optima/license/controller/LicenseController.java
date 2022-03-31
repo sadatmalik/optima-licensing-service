@@ -80,12 +80,12 @@ public class LicenseController {
      * @return returns a status message
      */
     @PutMapping
-    public ResponseEntity<String> updateLicense(
+    public ResponseEntity<License> updateLicense(
             @PathVariable("organizationId") String organizationId,
             @RequestBody License request) {
 
         return ResponseEntity.ok(licenseService
-                .updateLicense(request, organizationId));
+                .updateLicense(request));
     }
 
     /**
@@ -115,7 +115,7 @@ public class LicenseController {
             @PathVariable("licenseId") String licenseId) {
 
         return ResponseEntity.ok(licenseService
-                .deleteLicense(licenseId, organizationId));
+                .deleteLicense(licenseId));
     }
 
 }
