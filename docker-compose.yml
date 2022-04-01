@@ -6,25 +6,55 @@ services:
     ports:
       - "8071:8071"
     environment:
-      - "SPRING_PROFILES_ACTIVE=native,git"
-      - "ENCRYPT_KEY=IMSYMMETRIC"
+      - spring.profiles.active=git
+      - encrypt.key=IMSYMMETRIC
 
   eurekaserver:
     image: optima/eureka-server:0.0.1-SNAPSHOT
     ports:
       - "8070:8070"
+    depends_on:
+      - configserver
     environment:
-      - "SPRING_PROFILES_ACTIVE=native,git"
-      - "ENCRYPT_KEY=IMSYMMETRIC"
+      - spring.config.import=configserver:http://configserver:8071
+      - encrypt.key=IMSYMMETRIC
+
+  apigateway:
+    image: optima/optima-api-gateway:0.0.1-SNAPSHOT
+    ports:
+      - "8072:8072"
+    depends_on:
+      - configserver
+      - eurekaserver
+    environment:
+      - spring.config.import=configserver:http://configserver:8071
+      - eureka.client.serviceUrl.defaultZone=http://netflix:eureka@eurekaserver:8070/eureka
+      - encrypt.key=IMSYMMETRIC
 
   licensingservice:
     image: optima/optima-licensing-service:0.0.1-SNAPSHOT
     ports:
       - "8080:8080"
+    depends_on:
+      - configserver
+      - eurekaserver
     environment:
-      - "SPRING_PROFILES_ACTIVE=dev"
-      - "SPRING_CLOUD_CONFIG_URI=http://localhost:8071"
-      - "ENCRYPT_KEY=IMSYMMETRIC"
+      - spring.profiles.active=dev
+      - spring.config.import=configserver:http://configserver:8071
+      - eureka.client.serviceUrl.defaultZone=http://netflix:eureka@eurekaserver:8070/eureka
+      - spring.datasource.url=jdbc:mysql://host.docker.internal:3307/optima_db_dev?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+      - encrypt.key=IMSYMMETRIC
 
-      # In a real run-time environment, we would reference the ENCRYPT_KEY as an
-      # OS environment variable inside a Dockerfile.
+  organisationservice:
+    image: optima/organisation-service:0.0.1-SNAPSHOT
+    ports:
+      - "8081:8081"
+    depends_on:
+      - configserver
+      - eurekaserver
+    environment:
+      - spring.profiles.active=dev
+      - spring.config.import=configserver:http://configserver:8071
+      - eureka.client.serviceUrl.defaultZone=http://netflix:eureka@eurekaserver:8070/eureka
+      - spring.datasource.url=jdbc:mysql://host.docker.internal:3307/optima_db_dev?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+      - encrypt.key=IMSYMMETRIC
