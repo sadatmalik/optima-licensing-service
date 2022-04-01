@@ -40,8 +40,8 @@ public class License extends RepresentationModel<License> {
 
     private String description;
 
-    @Column(name = "organization_id", nullable = false)
-    private String organizationId;
+    @Column(name = "organisation_id", nullable = false)
+    private String organisationId;
 
     @Column(name = "product_name", nullable = false)
     private String productName;

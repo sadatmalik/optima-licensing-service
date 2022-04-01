@@ -28,7 +28,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value="v1/organization/{organizationId}/license")
+@RequestMapping(value="v1/organisation/{organisationId}/license")
 public class LicenseController {
 
     private final LicenseService licenseService;
@@ -47,24 +47,24 @@ public class LicenseController {
      */
     @GetMapping(value="/{licenseId}")
     public ResponseEntity<License> getLicense(
-            @PathVariable("organizationId") String organizationId,
+            @PathVariable("organisationId") String organisationId,
             @PathVariable("licenseId") String licenseId) {
 
         License license = licenseService
-                .getLicense(licenseId,organizationId);
+                .getLicense(licenseId,organisationId);
 
         license.add(
                 linkTo(methodOn(LicenseController.class)
-                        .getLicense(organizationId, license.getLicenseId()))
+                        .getLicense(organisationId, license.getLicenseId()))
                         .withSelfRel(),
                 linkTo(methodOn(LicenseController.class)
-                        .createLicense(organizationId, license, null))
+                        .createLicense(organisationId, license, null))
                         .withRel("createLicense"),
                 linkTo(methodOn(LicenseController.class)
-                        .updateLicense(organizationId, license))
+                        .updateLicense(organisationId, license))
                         .withRel("updateLicense"),
                 linkTo(methodOn(LicenseController.class)
-                        .deleteLicense(organizationId, license.getLicenseId()))
+                        .deleteLicense(organisationId, license.getLicenseId()))
                         .withRel("deleteLicense"));
 
         return ResponseEntity.ok(license);
@@ -88,7 +88,7 @@ public class LicenseController {
      *   - http://<licensing service Hostname/IP>:<licensing service Port>/v1/organisation/
      *   <organisationID>/license/<licenseID>/<client type( feign, discovery, rest)>
      *
-     * @param organizationId received as a path variable
+     * @param organisationId received as a path variable
      * @param licenseId a license id path variable
      * @param clientType specifies the client libraries in which a service consumer can
      *                   interact with the Spring Cloud Load Balancer
@@ -96,11 +96,11 @@ public class LicenseController {
      */
     @RequestMapping(value="/{licenseId}/{clientType}", method = RequestMethod.GET)
     public License getLicensesWithClient(
-            @PathVariable("organizationId") String organizationId,
+            @PathVariable("organisationId") String organisationId,
             @PathVariable("licenseId") String licenseId,
             @PathVariable("clientType") String clientType) {
 
-        return licenseService.getLicense(organizationId,
+        return licenseService.getLicense(organisationId,
                 licenseId, clientType);
     }
 
@@ -109,13 +109,13 @@ public class LicenseController {
      * of the updateLicense() method. @RequestBody maps the HTTPRequest body to a transfer
      * object (in this case, the License object).
      *
-     * @param organizationId path variable
+     * @param organisationId path variable
      * @param request request body
      * @return returns a status message
      */
     @PutMapping
     public ResponseEntity<License> updateLicense(
-            @PathVariable("organizationId") String organizationId,
+            @PathVariable("organisationId") String organisationId,
             @RequestBody License request) {
 
         return ResponseEntity.ok(licenseService
@@ -127,25 +127,25 @@ public class LicenseController {
      * values. This service parameter is not required, so if it’s not specified, we
      * will use the default locale.
      *
-     * @param organizationId
+     * @param organisationId
      * @param request
      * @param locale receive the language from the request Accept-Language header.
      * @return
      */
     @PostMapping
     public ResponseEntity<String> createLicense(
-            @PathVariable("organizationId") String organizationId,
+            @PathVariable("organisationId") String organisationId,
             @RequestBody License request,
             @RequestHeader(value = "Accept-Language",required = false)
                     Locale locale) {
 
         return ResponseEntity.ok(licenseService
-                .createLicense(request, organizationId, locale));
+                .createLicense(request, organisationId, locale));
     }
 
     @DeleteMapping(value="/{licenseId}")
     public ResponseEntity<String> deleteLicense(
-            @PathVariable("organizationId") String organizationId,
+            @PathVariable("organisationId") String organisationId,
             @PathVariable("licenseId") String licenseId) {
 
         return ResponseEntity.ok(licenseService

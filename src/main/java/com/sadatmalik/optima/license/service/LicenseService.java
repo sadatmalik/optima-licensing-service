@@ -32,30 +32,30 @@ public class LicenseService {
     private final OrganisationRestTemplateClient organisationRestClient;
     private final OrganisationDiscoveryClient organisationDiscoveryClient;
 
-    public License getLicense(String licenseId, String organizationId){
+    public License getLicense(String licenseId, String organisationId){
         License license = licenseRepository
-            .findByOrganizationIdAndLicenseId(organizationId, licenseId);
+            .findByOrganisationIdAndLicenseId(organisationId, licenseId);
         if (null == license) {
             throw new IllegalArgumentException(
                 String.format(messages.getMessage(
                                 "license.search.error.message", null, null),
-                        licenseId, organizationId));
+                        licenseId, organisationId));
         }
         return license.withComment(config.getProperty());
     }
 
-    public License getLicense(String licenseId, String organizationId,
+    public License getLicense(String organisationId, String licenseId,
                               String clientType) {
         License license = licenseRepository
-                .findByOrganizationIdAndLicenseId(organizationId, licenseId);
+                .findByOrganisationIdAndLicenseId(organisationId, licenseId);
 
         if (null == license) {
             throw new IllegalArgumentException(String.format(
                     messages.getMessage("license.search.error.message",
-                            null, null),licenseId, organizationId));
+                            null, null),licenseId, organisationId));
         }
 
-        Organisation organisation = retrieveOrganisationInfo(organizationId, clientType);
+        Organisation organisation = retrieveOrganisationInfo(organisationId, clientType);
 
         if (organisation != null) {
             license.setOrganisationName(organisation.getName());
@@ -77,12 +77,12 @@ public class LicenseService {
      * @param license
      * @return
      */
-    public String createLicense(License license, String organizationId,
+    public String createLicense(License license, String organisationId,
                                  Locale locale) {
         String responseMessage = null;
 
         if (license != null) {
-            license.setOrganizationId(organizationId);
+            license.setOrganisationId(organisationId);
             license.setLicenseId(UUID.randomUUID().toString());
             licenseRepository.save(license);
             license.withComment(config.getProperty());
