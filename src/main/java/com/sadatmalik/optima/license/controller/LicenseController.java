@@ -2,6 +2,7 @@ package com.sadatmalik.optima.license.controller;
 
 import com.sadatmalik.optima.license.model.License;
 import com.sadatmalik.optima.license.service.LicenseService;
+import com.sadatmalik.optima.license.utils.UserContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -160,8 +161,8 @@ public class LicenseController {
     public List<License> getLicenses(
             @PathVariable("organisationId") String organisationId)
             throws TimeoutException {
-//        log.debug("LicenseServiceController Correlation id: {}",
-//                UserContextHolder.getContext().getCorrelationId());
+        log.debug("LicenseServiceController Correlation id: {}",
+                UserContextHolder.getContext().getCorrelationId());
         return licenseService.getLicensesByOrganisation(organisationId);
     }
 

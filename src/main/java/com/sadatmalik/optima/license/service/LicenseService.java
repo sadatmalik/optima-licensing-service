@@ -7,7 +7,11 @@ import com.sadatmalik.optima.license.repository.LicenseRepository;
 import com.sadatmalik.optima.license.service.client.OrganisationDiscoveryClient;
 import com.sadatmalik.optima.license.service.client.OrganisationFeignClient;
 import com.sadatmalik.optima.license.service.client.OrganisationRestTemplateClient;
+import com.sadatmalik.optima.license.utils.UserContextHolder;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -59,13 +63,38 @@ public class LicenseService {
      * Teh fallback attribute will contain the name of the method that will be called when
      * Resilience4j interrupts a call because of a failure.
      *
+     * The @Bulkhead annotation indicates that we are setting up a bulkhead pattern. If we
+     * set no further values in the application properties, Resilience4j uses the default
+     * values for the semaphore bulkhead type. Omit the type attribute to default to the
+     * semaphore type.
+     *
+     * The @Retry sets up the retry pattern around all calls surrounding the lookup. This
+     * retry pattern stops overloading the service with more calls than it can consume in a
+     * given timeframe. This is an imperative technique to prepare our API for high
+     * availability and reliability.
+     *
+     * The @RateLimiter annotation sets up the rate limits. The main difference between the
+     * bulkhead and the rate limiter pattern is that the bulkhead pattern is in charge of
+     * limiting the number of concurrent calls (for example, it only allows X concurrent calls
+     * at a time). With the rate limiter, we can limit the number of total calls in a given
+     * timeframe (for example, allow X number of calls every Y seconds).
+     *
      * @param organisationId
      * @return
      */
     @CircuitBreaker(name = "licenseService",
+            fallbackMethod = "buildFallbackLicenseList")
+    @RateLimiter(name = "licenseService",
+            fallbackMethod = "buildFallbackLicenseList")
+    @Retry(name = "retryLicenseService",
+            fallbackMethod= "buildFallbackLicenseList")
+    @Bulkhead(name= "bulkheadLicenseService",
+            //type = Bulkhead.Type.THREADPOOL,
             fallbackMethod= "buildFallbackLicenseList")
     public List<License> getLicensesByOrganisation(String organisationId)
             throws TimeoutException {
+        log.debug("getLicensesByOrganization Correlation id: {}",
+                UserContextHolder.getContext().getCorrelationId());
         randomlyRunLong();
         return licenseRepository.findByOrganisationId(organisationId);
     }
