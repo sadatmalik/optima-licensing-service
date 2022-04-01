@@ -71,6 +71,40 @@ public class LicenseController {
     }
 
     /**
+     * The clientType parameter passed on the route drives the type of client we’re going to
+     * use. The specific types we can pass in on this route include the following:
+     *
+     *   - Discovery: Uses the Discovery Client and a standard Spring RestTemplate class to
+     *   invoke the organization service
+     *
+     *   - Rest: Uses an enhanced Spring RestTemplate to invoke the Load Balancer service
+     *
+     *   - Feign: Uses Netflix’s Feign client library to invoke a service via the Load
+     *   Balancer
+     *
+     * To call the getLicense() services with the different clients, you must call the following
+     * GET endpoint:
+     *
+     *   - http://<licensing service Hostname/IP>:<licensing service Port>/v1/organisation/
+     *   <organisationID>/license/<licenseID>/<client type( feign, discovery, rest)>
+     *
+     * @param organizationId received as a path variable
+     * @param licenseId a license id path variable
+     * @param clientType specifies the client libraries in which a service consumer can
+     *                   interact with the Spring Cloud Load Balancer
+     * @return a license
+     */
+    @RequestMapping(value="/{licenseId}/{clientType}", method = RequestMethod.GET)
+    public License getLicensesWithClient(
+            @PathVariable("organizationId") String organizationId,
+            @PathVariable("licenseId") String licenseId,
+            @PathVariable("clientType") String clientType) {
+
+        return licenseService.getLicense(organizationId,
+                licenseId, clientType);
+    }
+
+    /**
      * we use the @PathVariable and the @RequestBody annotations in the parameter body
      * of the updateLicense() method. @RequestBody maps the HTTPRequest body to a transfer
      * object (in this case, the License object).

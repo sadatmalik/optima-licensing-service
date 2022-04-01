@@ -2,7 +2,11 @@ package com.sadatmalik.optima.license.service;
 
 import com.sadatmalik.optima.license.config.ServiceConfig;
 import com.sadatmalik.optima.license.model.License;
+import com.sadatmalik.optima.license.model.Organisation;
 import com.sadatmalik.optima.license.repository.LicenseRepository;
+import com.sadatmalik.optima.license.service.client.OrganisationDiscoveryClient;
+import com.sadatmalik.optima.license.service.client.OrganisationFeignClient;
+import com.sadatmalik.optima.license.service.client.OrganisationRestTemplateClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
@@ -24,6 +28,10 @@ public class LicenseService {
     private final LicenseRepository licenseRepository;
     private final ServiceConfig config;
 
+    private final OrganisationFeignClient organisationFeignClient;
+    private final OrganisationRestTemplateClient organisationRestClient;
+    private final OrganisationDiscoveryClient organisationDiscoveryClient;
+
     public License getLicense(String licenseId, String organizationId){
         License license = licenseRepository
             .findByOrganizationIdAndLicenseId(organizationId, licenseId);
@@ -33,6 +41,29 @@ public class LicenseService {
                                 "license.search.error.message", null, null),
                         licenseId, organizationId));
         }
+        return license.withComment(config.getProperty());
+    }
+
+    public License getLicense(String licenseId, String organizationId,
+                              String clientType) {
+        License license = licenseRepository
+                .findByOrganizationIdAndLicenseId(organizationId, licenseId);
+
+        if (null == license) {
+            throw new IllegalArgumentException(String.format(
+                    messages.getMessage("license.search.error.message",
+                            null, null),licenseId, organizationId));
+        }
+
+        Organisation organisation = retrieveOrganisationInfo(organizationId, clientType);
+
+        if (organisation != null) {
+            license.setOrganisationName(organisation.getName());
+            license.setContactName(organisation.getContactName());
+            license.setContactEmail(organisation.getContactEmail());
+            license.setContactPhone(organisation.getContactPhone());
+        }
+
         return license.withComment(config.getProperty());
     }
 
@@ -85,5 +116,39 @@ public class LicenseService {
         responseMessage = String.format(messages.getMessage(
                 "license.delete.message", null, null),licenseId);
         return responseMessage;
+    }
+
+    /**
+     * The method will resolve based on the clientType passed to the route. This client type is
+     * used to look up an organization service instance. Called from getLicense() method to
+     * retrieve the organization data from the database.
+     *
+     * @param organisationId
+     * @param clientType
+     * @return
+     */
+    private Organisation retrieveOrganisationInfo(String organisationId,
+                                                  String clientType) {
+        Organisation organisation = null;
+
+        switch (clientType) {
+            case "feign":
+                System.out.println("I am using the feign client");
+                organisation = organisationFeignClient.getOrganisation(organisationId);
+                break;
+            case "rest":
+                System.out.println("I am using the rest client");
+                organisation = organisationRestClient.getOrganisation(organisationId);
+                break;
+            case "discovery":
+                System.out.println("I am using the discovery client");
+                organisation = organisationDiscoveryClient.getOrganisation(organisationId);
+                break;
+            default:
+                organisation = organisationRestClient.getOrganisation(organisationId);
+                break;
+        }
+
+        return organisation;
     }
 }

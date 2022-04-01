@@ -9,6 +9,14 @@ services:
       - "SPRING_PROFILES_ACTIVE=native,git"
       - "ENCRYPT_KEY=IMSYMMETRIC"
 
+  eurekaserver:
+    image: optima/eureka-server:0.0.1-SNAPSHOT
+    ports:
+      - "8070:8070"
+    environment:
+      - "SPRING_PROFILES_ACTIVE=native,git"
+      - "ENCRYPT_KEY=IMSYMMETRIC"
+
   licensingservice:
     image: optima/optima-licensing-service:0.0.1-SNAPSHOT
     ports:

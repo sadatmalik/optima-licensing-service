@@ -4,9 +4,14 @@ import com.sadatmalik.optima.license.config.ServiceConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
@@ -29,15 +34,36 @@ import java.util.Locale;
  * service discovery engine to find all instances of a service and call the /refresh endpoint
  * directly.
  *
+ * The @EnableDiscoveryClient is the trigger for Spring Cloud to enable the application to
+ * use the Discovery Client and the Spring Cloud Load Balancer libraries.
+ *
+ * The @EnableFeignClients annotation is needed to use the Feign client in your code. One
+ * wouldn't typically have both Feign and Discovery clients enabled.
+ *
  * @author sadatmalik
  */
 @SpringBootApplication
 @EnableConfigurationProperties(value = ServiceConfig.class)
 @RefreshScope
+@EnableEurekaClient
+@EnableDiscoveryClient
+@EnableFeignClients
 public class OptimaLicensingServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(OptimaLicensingServiceApplication.class, args);
+	}
+
+	/**
+	 * Creates the Load Balancer–backed Spring RestTemplate bean. Used by the
+	 * service.client.OrganisationRestTemplateClient.
+	 *
+	 * @return load balancer-backed rest template.
+	 */
+	@LoadBalanced
+	@Bean
+	public RestTemplate getRestTemplate(){
+		return new RestTemplate();
 	}
 
 	/**
