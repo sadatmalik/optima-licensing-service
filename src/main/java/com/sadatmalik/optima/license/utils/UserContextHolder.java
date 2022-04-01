@@ -10,6 +10,9 @@ import org.springframework.util.Assert;
  * Be careful when working directly with ThreadLocal. An incorrect development inside
  * ThreadLocal can lead to memory leaks in the application.
  *
+ * The ThreadLocal variable will be accessible by any method being invoked by the thread
+ * processing the user’s request.
+ *
  * @author sadatmalik
  */
 public class UserContextHolder {

@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 /**
  * POJO class that contains all the specific data we want to store in the UserContextHolder.
  *
+ * The UserContext class holds the HTTP header values for an individual service client
+ * request that is processed by our microservice.
+ *
  * @author sadatmalik
  */
 @Getter
