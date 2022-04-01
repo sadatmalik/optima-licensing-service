@@ -7,19 +7,28 @@ import com.sadatmalik.optima.license.repository.LicenseRepository;
 import com.sadatmalik.optima.license.service.client.OrganisationDiscoveryClient;
 import com.sadatmalik.optima.license.service.client.OrganisationFeignClient;
 import com.sadatmalik.optima.license.service.client.OrganisationRestTemplateClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 /**
  * The service class that we’ll use to develop the logic of the different services we are going
  * to create on the controller class.
  *
+ * Repository calls for the retrieval of licensing service data from the licensing database are
+ * wrapped using a synchronous circuit breaker with Resilience4j.
+ *
+ * With a synchronous call, the licensing service retrieves its data but waits for the SQL
+ * statement to complete or for a circuit breaker timeout before it continues processing.
+ *
  * @author sadatmalik
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LicenseService {
@@ -31,6 +40,71 @@ public class LicenseService {
     private final OrganisationFeignClient organisationFeignClient;
     private final OrganisationRestTemplateClient organisationRestClient;
     private final OrganisationDiscoveryClient organisationDiscoveryClient;
+
+    /**
+     * Resilience4j and Spring Cloud use @CircuitBreaker to mark Java class methods managed
+     * by a Resilience4j circuit breaker. When the Spring framework sees this annotation, it
+     * dynamically generates a proxy that wraps the method and manages all calls to that method
+     * through a thread pool specifically set aside to handle remote calls.
+     *
+     * With the use of the @CircuitBreaker annotation, any time the getLicensesByOrganisation()
+     * method is called, the call is wrapped with a Resilience4j circuit breaker. The circuit
+     * breaker interrupts any failed attempt to call the getLicensesByOrganisation() method.
+     *
+     * The randomlyRunningLong() call simulates the method running into a slow or timed out
+     * database query.
+     *
+     * The annotation includes a simple fallback strategy for our licensing service that
+     * returns a licensing object that says no licensing information is currently available.
+     * Teh fallback attribute will contain the name of the method that will be called when
+     * Resilience4j interrupts a call because of a failure.
+     *
+     * @param organisationId
+     * @return
+     */
+    @CircuitBreaker(name = "licenseService",
+            fallbackMethod= "buildFallbackLicenseList")
+    public List<License> getLicensesByOrganisation(String organisationId)
+            throws TimeoutException {
+        randomlyRunLong();
+        return licenseRepository.findByOrganisationId(organisationId);
+    }
+
+    /**
+     * The fallback method must reside in the same class as the original method that was
+     * protected by @CircuitBreaker. To create the fallback method in Resilience4j, we need
+     * to create a method that contains the same signature as the originating function plus
+     * one extra parameter, which is the target exception parameter.
+     *
+     * @param organisationId
+     * @param t
+     * @return
+     */
+    private List<License> buildFallbackLicenseList(String organisationId, Throwable t){
+        List<License> fallbackList = new ArrayList<>();
+        License license = new License();
+        license.setLicenseId("0000000-00-00000");
+        license.setOrganisationId(organisationId);
+        license.setProductName("Sorry no licensing information currently available");
+        fallbackList.add(license);
+        return fallbackList;
+    }
+
+    private void randomlyRunLong() throws TimeoutException {
+        Random rand = new Random();
+        int randomNum = rand.nextInt(3) + 1;
+        if (randomNum==3)
+            sleep();
+    }
+
+    private void sleep() throws TimeoutException {
+        try {
+            Thread.sleep(5000);
+            throw new java.util.concurrent.TimeoutException();
+        } catch (InterruptedException e) {
+            log.error(e.getMessage());
+        }
+    }
 
     public License getLicense(String licenseId, String organisationId){
         License license = licenseRepository

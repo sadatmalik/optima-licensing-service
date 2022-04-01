@@ -3,10 +3,13 @@ package com.sadatmalik.optima.license.controller;
 import com.sadatmalik.optima.license.model.License;
 import com.sadatmalik.optima.license.service.LicenseService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -26,6 +29,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  *
  * @author sadatmalik
  */
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value="v1/organisation/{organisationId}/license")
@@ -150,6 +154,15 @@ public class LicenseController {
 
         return ResponseEntity.ok(licenseService
                 .deleteLicense(licenseId));
+    }
+
+    @RequestMapping(value="/", method = RequestMethod.GET)
+    public List<License> getLicenses(
+            @PathVariable("organisationId") String organisationId)
+            throws TimeoutException {
+//        log.debug("LicenseServiceController Correlation id: {}",
+//                UserContextHolder.getContext().getCorrelationId());
+        return licenseService.getLicensesByOrganisation(organisationId);
     }
 
 }
