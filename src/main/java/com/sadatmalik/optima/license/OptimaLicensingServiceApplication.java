@@ -1,6 +1,7 @@
 package com.sadatmalik.optima.license;
 
 import com.sadatmalik.optima.license.config.ServiceConfig;
+import com.sadatmalik.optima.license.utils.UserContextInterceptor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -15,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -58,12 +61,25 @@ public class OptimaLicensingServiceApplication {
 	 * Creates the Load Balancer–backed Spring RestTemplate bean. Used by the
 	 * service.client.OrganisationRestTemplateClient.
 	 *
+	 * We add a UserContextInterceptor to the RestTemplate.
+	 *
 	 * @return load balancer-backed rest template.
 	 */
 	@LoadBalanced
 	@Bean
-	public RestTemplate getRestTemplate(){
-		return new RestTemplate();
+	public RestTemplate getRestTemplate() {
+		RestTemplate template = new RestTemplate();
+		List interceptors = template.getInterceptors();
+		if (interceptors == null) {
+			template.setInterceptors(
+					Collections.singletonList(
+							new UserContextInterceptor()));
+		} else {
+			interceptors.add(new UserContextInterceptor());
+			template.setInterceptors(interceptors);
+		}
+
+		return template;
 	}
 
 	/**
