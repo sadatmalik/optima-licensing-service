@@ -1,6 +1,27 @@
 version: '3'
 
 services:
+  keycloak:
+    image: jboss/keycloak
+    restart: always
+    environment:
+      # KEYCLOAK_VERSION: 6.0.1
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+#    volumes:
+#      - ./realm-export.json:/opt/jboss/keycloak/realm-export.json
+#    command:
+#      - "-b 0.0.0.0"
+#      - "-Dkeycloak.import=/opt/jboss/keycloak/realm-export.json"
+#      - "-Dkeycloak.profile.feature.scripts=enabled"
+#      - "-Dkeycloak.profile.feature.upload_scripts=enabled"
+    ports:
+      - "8080:8080"
+    networks:
+      backend:
+        aliases:
+          - "keycloak"
+
   configserver:
     image: optima/config-server:0.0.1-SNAPSHOT
     ports:
@@ -34,7 +55,7 @@ services:
   licensingservice:
     image: optima/optima-licensing-service:0.0.1-SNAPSHOT
     ports:
-      - "8080:8080"
+      - "8180:8080"
     depends_on:
       - configserver
       - eurekaserver
@@ -58,3 +79,7 @@ services:
       - eureka.client.serviceUrl.defaultZone=http://netflix:eureka@eurekaserver:8070/eureka
       - spring.datasource.url=jdbc:mysql://host.docker.internal:3307/optima_db_dev?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
       - encrypt.key=IMSYMMETRIC
+
+networks:
+  backend:
+    driver: bridge
