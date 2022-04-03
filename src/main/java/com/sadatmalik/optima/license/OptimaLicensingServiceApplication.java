@@ -1,7 +1,10 @@
 package com.sadatmalik.optima.license;
 
 import com.sadatmalik.optima.license.config.ServiceConfig;
+import com.sadatmalik.optima.license.events.model.OrganisationChangeModel;
 import com.sadatmalik.optima.license.utils.UserContextInterceptor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -10,8 +13,14 @@ import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.cloud.stream.annotation.StreamListener;
+import org.springframework.cloud.stream.messaging.Sink;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
@@ -43,15 +52,31 @@ import java.util.Locale;
  * The @EnableFeignClients annotation is needed to use the Feign client in your code. One
  * wouldn't typically have both Feign and Discovery clients enabled.
  *
+ * The @EnableBinding(Sink.class) tells the application service to use Spring Cloud Stream
+ * to bind to a message broker. Sink.class tells the service to the use the channels defined
+ * in the Sink interface to listen for incoming messages.
+ *
+ * Spring Cloud Stream exposes a default channel on the Sink interface. This Sink interface
+ * channel is called input and is used to listen for incoming messages.
+ *
+ * To communicate with a specific Redis instance, we’ll expose a JedisConnectionFactory class
+ * as a Spring bean. Once we have a connection to Redis, we’ll use that connection to create
+ * a Spring RedisTemplate object.
+ *
  * @author sadatmalik
  */
+@Slf4j
 @SpringBootApplication
+@RequiredArgsConstructor
 @EnableConfigurationProperties(value = ServiceConfig.class)
 @RefreshScope
 @EnableEurekaClient
 @EnableDiscoveryClient
 @EnableFeignClients
+@EnableBinding(Sink.class)
 public class OptimaLicensingServiceApplication {
+
+	private final ServiceConfig serviceConfig;
 
 	public static void main(String[] args) {
 		SpringApplication.run(OptimaLicensingServiceApplication.class, args);
@@ -116,4 +141,44 @@ public class OptimaLicensingServiceApplication {
 		messageSource.setBasenames("messages");
 		return messageSource;
 	}
+
+	/**
+	 * Executes this method each time a message is received from the input channel.
+	 *
+	 * Spring Cloud Stream automatically deserializes the incoming message to a Java POJO
+	 * called OrganisationChangeModel.
+	 *
+	 * @param orgChange
+	 */
+	@StreamListener(Sink.INPUT)
+	public void loggerSink(OrganisationChangeModel orgChange) {
+		log.debug("Received {} event for the organisation id {}",
+				orgChange.getAction(), orgChange.getOrganisationId());
+	}
+
+	/**
+	 * Sets up the database connection to the Redis server.
+	 *
+	 * @return
+	 */
+	@Bean
+	JedisConnectionFactory jedisConnectionFactory() {
+		String hostname = serviceConfig.getRedisServer();
+		int port = Integer.parseInt(serviceConfig.getRedisPort()); RedisStandaloneConfiguration redisStandaloneConfiguration
+				= new RedisStandaloneConfiguration(hostname, port);
+		return new JedisConnectionFactory(redisStandaloneConfiguration);
+	}
+
+	/**
+	 * Creates a RedisTemplate to carry out actions for our Redis server.
+	 *
+	 * @return
+	 */
+	@Bean
+	public RedisTemplate<String, Object> redisTemplate() {
+		RedisTemplate<String, Object> template = new RedisTemplate<>();
+		template.setConnectionFactory(jedisConnectionFactory());
+		return template;
+	}
+
 }
