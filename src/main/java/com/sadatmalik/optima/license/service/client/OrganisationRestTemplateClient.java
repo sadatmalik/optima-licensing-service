@@ -1,12 +1,11 @@
 package com.sadatmalik.optima.license.service.client;
 
+import com.sadatmalik.optima.license.model.Organisation;
+import org.keycloak.adapters.springsecurity.client.KeycloakRestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-
-import com.sadatmalik.optima.license.model.Organisation;
 
 /**
  * Example of invoking services with a Load Balancer–aware Spring REST template.
@@ -24,12 +23,16 @@ import com.sadatmalik.optima.license.model.Organisation;
  * Rather than using the physical location of the service in the RestTemplate call, you need to
  * build the target URL using the Eureka service ID of the service you want to call.
  *
+ * Note - the use of KeycloakRestTemplate is a drop-in replacement for the standard
+ * RestTemplate. It handles the propagation of the access token.
+ *
  * @author sadatmalik
  */
 @Component
 public class OrganisationRestTemplateClient {
+
     @Autowired
-    RestTemplate restTemplate;
+    KeycloakRestTemplate restTemplate;
 
     /**
      * When using a Load Balancer–backed RestTemplate, we build the target URL with the
@@ -49,7 +52,7 @@ public class OrganisationRestTemplateClient {
     public Organisation getOrganisation(String organisationId){
         ResponseEntity<Organisation> restExchange =
                 restTemplate.exchange(
-                        "http://optima-organisation-service/v1/organisation/{organisationId}",
+                        "http://localhost:8072/optima-organisation-service/v1/organisation/{organisationId}",
                         HttpMethod.GET,
                         null, Organisation.class, organisationId);
 
